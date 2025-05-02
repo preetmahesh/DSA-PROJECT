@@ -14,7 +14,7 @@
 
 using namespace std;
 
-// --------- Display Colored Text ---------
+
 void displayColoredText(const string& text, int colorCode) {
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), colorCode);
     cout << text;
@@ -44,6 +44,7 @@ struct User {
     string password;
     string displayName;
     bool isPublic;
+    string bio;
     vector<int> posts;
     set<string> followers;
     set<string> following;
@@ -81,160 +82,272 @@ void loadPosts();
 void savePosts();
 
 // --------- Helper Functions ---------
-
-// --------- Display Start Window ---------
 void displayStartWindow() {
-    system("cls"); // Clear screen
-    displayColoredText("Welcome to the Social Media Recommendation System!\n", 10);
-    displayColoredText("Please select an option:\n", 15);
+    system("cls");
+    cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t\n";
+    cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t\n\n\n\n\n\n\n";
+    displayColoredText("        \t\t ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n", 3); 
+    displayColoredText("        \t\t 8  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  8\n", 3); // Yellow 
+    displayColoredText("        \t\t 8  •                                                             •  8\n", 11); // Cyan 
+    displayColoredText("        \t\t 8  •         Welcome to your Personalised Social engine!         •  8\n", 7); // Magenta 
+    displayColoredText("        \t\t 8  •                                                             •  8\n", 13); // Green 
+    displayColoredText("        \t\t 8  •                        Developed by:                        •  8\n", 14); // Yellow 
+    displayColoredText("        \t\t 8  •                                                             •  8\n", 14); // Yellow 
+    displayColoredText("        \t\t 8  •             Preet Mahesh, Jiya Lal, Abdul Wasay             •  8\n", 12); // Cyan
+    displayColoredText("        \t\t 8  •                                                             •  8\n", 11); // Cyan 
+    displayColoredText("        \t\t 8  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  8\n", 3); 
+    displayColoredText("        \t\t ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n", 3); 
+    cout << "\n\n\n\n";
+    cin.get(); // Wait for user input 
 }
+//18 is for green
 
-// --------- Main Menu ---------
 void displayMainMenu() {
-    cout << "Main Menu\n"; // Label added here
     int choice;
-    cout << "1. Sign Up\n2. Login\n3. Exit\n";
-    cin >> choice;
-    switch (choice) {
-    case 1:
-        signUp();
-        break;
-    case 2:
-        login();
-        break;
-    case 3:
-        exit(0);
-        break;
-    default:
-        displayColoredText("Invalid choice, try again!\n", 12);
-        displayMainMenu();
-        break;
-    }
+        system("cls");
+        displayColoredText("\n\n\t\t\t+-----------------------------------------+\n", 4);
+        displayColoredText("\t\t\t|       Welcome to our Social Media       |\n", 6);
+        displayColoredText("\t\t\t+-----------------------------------------+\n\n", 4);
+        cout << "\n\n\t\t Main Menu:\n";
+        cout << "\t\t............\n\n";
+        cout << "\t\t1. Sign Up" << endl;
+        cout << "\t\t2. Login" << endl;
+        cout << "\t\t3. Exit\n" << endl;
+        cout << "\t\tEnter your choice: ";
+        cin >> choice;
+        switch (choice) {
+        case 1:
+            signUp();
+            break;
+        case 2:
+            login();
+            break;
+        case 3:
+            cout << endl;
+            exit(0);
+            break;
+        default:
+            displayColoredText("Invalid choice, try again!\n", 12);
+            displayMainMenu();
+            break;
+        }
+
 }
 
 // --------- Sign Up ---------
 void signUp() {
-    system("cls"); // Clear screen
-    cout << "Sign Up\n"; // Label added here
+    system("cls");
+    displayColoredText("\n\n\t\t           - SIGN UP PAGE - \n", 11);
+    displayColoredText("\t\t----------------------------------- \n\n", 11);
+
     string username, password, displayName;
     bool isPublic;
-    cout << "Enter your username: ";
+    User newUser;
+
+    cout << "\t\tEnter your username: ";
     cin >> username;
-    cout << "Enter your password: ";
+
+    cout << "\t\tEnter your password: ";
     cin >> password;
-    cout << "Enter your display name: ";
-    cin >> displayName;
-    cout << "Do you want your profile to be public? (1 for Yes, 0 for No): ";
+
+    cout << "\t\tEnter your display name: ";
+    cin.ignore();
+    getline(cin, displayName);
+
+    cout << "\t\tEnter your bio (optional): ";
+    cin.ignore();
+    getline(cin, newUser.bio);
+
+
+    cout << "\n\t\tDo you want your profile to be public? (1 = Yes, 0 = No): ";
     cin >> isPublic;
 
-    User newUser;
     newUser.username = username;
     newUser.password = password;
     newUser.displayName = displayName;
     newUser.isPublic = isPublic;
+
     users[username] = newUser;
-    displayColoredText("Sign Up successful! You can now log in.\n", 10);
-    saveUsers(); // Save users after sign-up
+    saveUsers();
+
+    displayColoredText("\n\t\tSign Up successful! You can now log in.\n", 10);
+    cin.ignore();
+    cin.get(); // Pause before returning
     displayMainMenu();
 }
-
-// --------- Login ---------
+//loginnnn
 void login() {
-    system("cls"); // Clear screen
-    cout << "Login\n"; // Label added here
+    system("cls");
+    displayColoredText("\n\n\t\t           - LOGIN PAGE - \n", 12);
+    displayColoredText("\t\t----------------------------------- \n\n", 12);
     string username, password;
-    cout << "Enter your username: ";
+    cout << "\t\tEnter your username: ";
     cin >> username;
-    cout << "Enter your password: ";
+    cout << "\t\tEnter your password: ";
     cin >> password;
 
-    if (users.find(username) != users.end() && users[username].password == password) {
+    auto it = users.find(username);
+    if (it != users.end() && it->second.password == password) {
         displayColoredText("Login successful!\n", 10);
-        profileMenu(users[username]);
+
+        // Create a local copy of the user object for the session
+        User currentUser = it->second;
+
+        // user goes aagay
+        profileMenu(currentUser);
+
+        // any changes (post, share wtv gets saved to map again)
+        users[username] = currentUser;
     }
     else {
-        displayColoredText("Invalid username or password. Try again.\n", 12);
+        displayColoredText("\n\t\tInvalid username or password. Try again.\n", 12);
+        cin.ignore();
+        cin.get();
         displayMainMenu();
     }
 }
 
+void profileDisplay(User& user) {
+    displayColoredText("\n\n\t\t       - PROFILE DASHBOARD - \n", 14);
+    displayColoredText("\t\t----------------------------------- \n\n", 14);
+
+    // Profile Summary
+    cout << "\t\tUsername: " << user.username << "\n";
+    cout << "\t\tDisplay Name: " << user.displayName << "\n";
+    cout << "\t\tBio: ";
+    if (user.bio.empty()) {
+        cout << "N/A";
+    }
+    else {
+        cout << user.bio;
+    }
+    cout << "\n\t\tAccount Type: ";
+    if (user.isPublic)
+        cout << "Public\n\n";
+    else
+        cout << "Private\n\n";
+
+    // Follower & Post Stats
+    cout << "\t\tPosts: " << user.posts.size()
+        << " | Followers: " << user.followers.size()
+        << " | Following: " << user.following.size() << "\n";
+    cin.ignore();
+    cin.get();
+    profileMenu(user);
+    
+    
+}
+
 // --------- Profile Menu ---------
 void profileMenu(User& user) {
-    system("cls"); // Clear screen
-    cout << "Profile Menu\n"; // Label added here
+    system("cls");
+    displayColoredText("\n\n\t\t     - PROFILE MENU - \n", 14);
+    displayColoredText("\t\t----------------------------------- \n\n", 14);
+
+    cout << "\t\tWelcome, " << user.displayName << "!\n\n";
+    cout << "\t\t1. Profile Display\n";
+    cout << "\t\t2. Create Post\n";
+    cout << "\t\t3. View Feed\n";
+    cout << "\t\t4. Explore Posts\n";
+    cout << "\t\t5. View Saved Posts\n";
+    cout << "\t\t6. Send Message\n";
+    cout << "\t\t7. View Messages\n";
+    cout << "\t\t8. Logout\n\n";
+    cout << "\t\tEnter your choice: ";
+
     int choice;
-    cout << "Welcome " << user.displayName << "!\n";
-    cout << "1. Create Post\n2. View Feed\n3. Explore Posts\n4. View Saved Posts\n5. Send Message\n6. View Messages\n7. Logout\n";
     cin >> choice;
+
     switch (choice) {
     case 1:
-        createPost(user);
+        profileDisplay(user);
         break;
     case 2:
-        viewFeed(user);
+        createPost(user); 
         break;
     case 3:
-        explorePosts();
+        viewFeed(user); 
         break;
-    case 4:
-        viewSavedPosts(user);
+    case 4: 
+        explorePosts(); 
         break;
     case 5:
-        sendMessage(user);
+        viewSavedPosts(user);
         break;
     case 6:
-        viewMessages(user);
+        sendMessage(user); 
         break;
     case 7:
+        viewMessages(user);
+        break;
+    case 8:
         logout(user);
         break;
     default:
-        displayColoredText("Invalid choice. Try again.\n", 12);
+        displayColoredText("\n\t\tInvalid choice. Try again.\n", 12);
+        cin.ignore(); 
+        cin.get();
         profileMenu(user);
-        break;
     }
 }
-
 // --------- Create Post ---------
 void createPost(User& user) {
-    system("cls"); // Clear screen
-    cout << "Create Post\n"; // Label added here
+    system("cls");
+    displayColoredText("\n\n\t\t          - CREATE POST - \n", 11);
+    displayColoredText("\t\t----------------------------------- \n\n", 11);
+
     string content;
-    cout << "Enter the content of your post: ";
+    cout << "\t\tEnter the content of your post:\n\t\t";
     cin.ignore();
     getline(cin, content);
 
     Post newPost(++lastPostId, user.username, content);
     posts[newPost.postId] = newPost;
     user.posts.push_back(newPost.postId);
-    displayColoredText("Post created successfully!\n", 10);
-    savePosts(); // Save posts after creating one
+    savePosts();
+
+    displayColoredText("\n\t\tPost created successfully!\n", 10);
+    cin.get();
     profileMenu(user);
 }
 
 // --------- View Feed ---------
 void viewFeed(User& user) {
-    system("cls"); // Clear screen
-    cout << "View Feed\n"; // Label added here
-    cout << "Your Feed:\n";
+    system("cls");
+    displayColoredText("\n\n\t\t          - YOUR FEED - \n", 11);
+    displayColoredText("\t\t----------------------------------- \n\n", 11);
+
     for (int postId : user.posts) {
         Post& post = posts[postId];
-        cout << post.username << ": " << post.content << " | Likes: " << post.likes << "\n";
+        cout << "\t\t" << post.username << ": " << post.content
+            << " | Likes: " << post.likes << "\n";
     }
+
+    cout << "\n\t\tPress Enter to return...";
+    cin.ignore();
+    cin.get();
     profileMenu(user);
 }
 
+
 // --------- Explore Posts ---------
 void explorePosts() {
-    system("cls"); // Clear screen
-    cout << "Explore Posts\n"; // Label added here
-    cout << "Explore Posts:\n";
+    system("cls");
+    displayColoredText("\n\n\t\t          - EXPLORE POSTS - \n", 11);
+    displayColoredText("\t\t----------------------------------- \n\n", 11);
+
     for (auto& pair : posts) {
         Post& post = pair.second;
-        cout << post.username << ": " << post.content << " | Likes: " << post.likes << "\n";
+        cout << "\t\t" << post.username << ": " << post.content
+            << " | Likes: " << post.likes << "\n";
     }
+
+    cout << "\n\t\tPress Enter to return...";
+    cin.ignore();
+    cin.get();
     displayMainMenu();
 }
+
 
 // --------- Like Post ---------
 void likePost(User& user) {
@@ -295,18 +408,27 @@ void savePost(User& user) {
     }
     profileMenu(user);
 }
-
-// --------- View Saved Posts ---------
 void viewSavedPosts(User& user) {
-    system("cls"); // Clear screen
-    cout << "View Saved Posts\n"; // Label added here
-    cout << "Your Saved Posts:\n";
-    for (int postId : user.savedPosts) {
-        Post& post = posts[postId];
-        cout << post.username << ": " << post.content << " | Likes: " << post.likes << "\n";
+    system("cls");
+    displayColoredText("\n\n\t\t        - SAVED POSTS - \n", 14);
+    displayColoredText("\t\t-----------------------------------\n\n", 14);
+
+    if (user.savedPosts.empty()) {
+        displayColoredText("\t\tNo saved posts.\n", 12);
     }
-    profileMenu(user);
+    else {
+        for (int postId : user.savedPosts) {
+            Post& post = posts[postId];
+            cout << "\t\t[" << post.postId << "] " << post.username << ": " << post.content
+                << " | Likes: " << post.likes << "\n";
+        }
+    }
+
+    cout << "\n\t\tPress Enter to return...";
+    cin.ignore();
+    cin.get();
 }
+
 
 // --------- Send Message ---------
 void sendMessage(User& user) {
@@ -344,15 +466,28 @@ void viewMessages(User& user) {
     profileMenu(user);
 }
 
-// --------- Logout ---------
 void logout(User& user) {
-    system("cls"); // Clear screen
-    cout << "Logout\n"; // Label added here
-    displayColoredText("You have logged out successfully.\n", 10);
-    saveUsers(); // Ensure that users data is saved
-    savePosts(); // Ensure that posts data is saved
-    displayMainMenu();
+    
+    displayColoredText("\n\n\t\tAre you sure you want to logout? (1 = Yes, 2 = No): ", 14);
+    int choice;
+    cin >> choice;
+
+    if (choice == 1) {
+        cout << "\t\tLogging out...\n";
+        Sleep(1000);
+        saveUsers(); // Ensure that users data is saved
+        savePosts(); // Ensure that posts data is saved
+        displayMainMenu(); // Return to main menu (Sign up / Login page)
+    }
+    else if (choice == 2) {
+        displayMainMenu(); // Return to user's profile menu without logging out
+    }
+    else {
+        displayColoredText("Invalid choice, please enter 1 or 2.\n", 12);
+        logout(user); // Retry if the input is invalid
+    }
 }
+
 
 // --------- Load Data ---------
 void loadUsers() {
@@ -364,11 +499,14 @@ void loadUsers() {
     string line;
     while (getline(userFile, line)) {
         stringstream ss(line);
-        string username, password, displayName;
+        string username, password, displayName, bio;
         bool isPublic;
         ss >> username >> password >> displayName >> isPublic;
+        getline(ss, bio); 
         User user = { username, password, displayName, isPublic };
+        user.bio = bio;
         users[username] = user;
+
     }
     userFile.close();
 }
@@ -382,7 +520,7 @@ void saveUsers() {
     }
     for (auto& pair : users) {
         User& user = pair.second;
-        userFile << user.username << " " << user.password << " " << user.displayName << " " << user.isPublic << "\n";
+        userFile << user.username << " " << user.password << " " << user.displayName << " " << user.isPublic << " " << user.bio << "\n";
     }
     userFile.close();
 }
