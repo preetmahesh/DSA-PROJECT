@@ -147,7 +147,7 @@ struct Post {
 
     Post() {}
     Post(int id, string user, string cont, string tags[5]) :
-        postId(id), username(user), content(cont), likes(0) {
+        postId(id), username(user), content(cont), likes(0), priority(0) {
         for (int i = 0; i < 5; i++) {
             keywords[i] = tags[i];
         }
@@ -161,6 +161,7 @@ struct Message {
 };
 
 struct User {
+    int userId;
     string username;
     string password;
     string displayName;
@@ -168,12 +169,15 @@ struct User {
     string bio;
     vector<int> posts;
     string interest[5];
-    CustomSet followers;
-    CustomSet following;
+    CustomSet friends;
+    //CustomSet following;
     CustomStack activityLog;
     queue<Message> messages;
     CustomQueue notifications; // Replaced CustomMaxHeap
     CustomSet savedPosts;
+    
+    User(){}
+    User(int id) : userId(id) { }
 };
 
 // Custom Hash Table for Users (string -> User)
@@ -314,7 +318,9 @@ struct PostHashTable {
 // Global Data
 UserHashTable users;
 PostHashTable posts;
+vector<string> friendShips[100];
 int lastPostId = 0;
+int lastUserId = 0;
 
 // --------- Function Prototypes ---------
 void displayColoredText(const string& text, int colorCode);
@@ -333,7 +339,8 @@ void savePost(User& user, int postId);
 void viewSavedPosts(User& user);
 void sendMessage(User& user);
 void viewMessages(User& user);
-void addFriends(User& user); // New function
+//void addFriends(User& user);
+void makeFriends(User& user);// New function
 void viewNotifications(User& user); // New function
 void searchUsers();
 void searchPosts();
@@ -436,6 +443,7 @@ void signUp() {
     newUser.password = password;
     newUser.displayName = displayName;
     newUser.isPublic = isPublic;
+    newUser.userId = ++lastUserId;
 
     users.insert(username, newUser);
     saveUsers();
@@ -493,8 +501,8 @@ void profileDisplay(User& user) {
         cout << "Private\n\n";
 
     cout << "\t\tPosts: " << user.posts.size()
-        << " | Followers: " << user.followers.size
-        << " | Following: " << user.following.size << "\n";
+        << " | Friends: " << user.friends.size;
+        //<< " | Following: " << user.following.size << "\n";
     cin.ignore();
     cin.get();
     profileMenu(user);
@@ -545,7 +553,7 @@ void profileMenu(User& user) {
         viewMessages(user);
         break;
     case 8:
-        addFriends(user);
+        makeFriends(user);
         break;
     case 9:
         viewNotifications(user);
@@ -600,8 +608,13 @@ void viewFeed(User& user) {
     char choice = - 1;
     
     posts.forEach([&](Post& post) {
-        cout << "\t\t" << post.username << ": " << post.content
-            << " | Likes: " << post.likes << " | Priority " << post.priority << "\n";
+        
+        if (user.friends.contains(post.username)) {
+            cout << "\t\t" << post.username << ": " << post.content
+                << " | Likes: " << post.likes << "\n";
+        }
+        
+    
 
         });
       
@@ -621,9 +634,8 @@ void explorePosts(User& user) {
 
     vector<Post> postsWithPriority;
 
-    // Calculate priority based on interest match
     posts.forEach([&](Post& post) {
-        int count = 0; // Reset for each post
+        int count = 0; 
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
                 if (user.interest[i] == post.keywords[j]) {
@@ -632,10 +644,10 @@ void explorePosts(User& user) {
             }
         }
         post.priority = count;
-        postsWithPriority.push_back(post); // Copy updated post
+        postsWithPriority.push_back(post); 
         });
 
-    // Manual Bubble Sort by priority (descending)
+    
     int n = postsWithPriority.size();
     for (int i = 0; i < n - 1; ++i) {
         for (int j = 0; j < n - i - 1; ++j) {
@@ -681,9 +693,6 @@ void explorePosts(User& user) {
     cin.get();
     profileMenu(user);
 }
-
-
-
 
 // --------- Like Post ---------
 void likePost(User& user, int postId) {
@@ -801,15 +810,73 @@ void viewMessages(User& user) {
 }
 
 // --------- Add Friends ---------
-void addFriends(User& user) {
+//void addFriends(User& user) {
+//    system("cls");
+//    displayColoredText("\n\n\t\t          - ADD FRIENDS - \n", 11);
+//    displayColoredText("\t\t----------------------------------- \n\n", 11);
+//
+//    string targetUsername;
+//    cout << "\t\tEnter the username to follow: ";
+//    cin >> targetUsername;
+//
+//    if (targetUsername == user.username) {
+//        displayColoredText("\t\tYou cannot follow yourself!\n", 12);
+//        cin.ignore();
+//        cin.get();
+//        profileMenu(user);
+//        return;
+//    }
+//
+//    User* targetUser = users.find(targetUsername);
+//    if (!targetUser) {
+//        displayColoredText("\t\tUser not found.\n", 12);
+//        cin.ignore();
+//        cin.get();
+//        profileMenu(user);
+//        return;
+//    }
+//
+//    if (user.following.contains(targetUsername)) {
+//        displayColoredText("\t\tYou are already following this user!\n", 12);
+//        cin.ignore();
+//        cin.get();
+//        profileMenu(user);
+//        return;
+//    }
+//
+//    if (targetUser->isPublic) {
+//        // Directly follow public account
+//        user.following.insert(targetUsername);
+//        targetUser->followers.insert(user.username);
+//        users.insert(user.username, user);
+//        users.insert(targetUsername, *targetUser);
+//        saveUsers();
+//        displayColoredText("\t\tYou are now following " + targetUsername + "!\n", 10);
+//    }
+//    else {
+//        // Send follow request for private account
+//        string notification = user.username + " sent you a follow request";
+//        targetUser->notifications.enqueue(notification);
+//        users.insert(targetUsername, *targetUser);
+//        saveUsers();
+//        displayColoredText("\t\tFollow request sent to " + targetUsername + "!\n", 10);
+//    }
+//
+//    cin.ignore();
+//    cin.get();
+//    profileMenu(user);
+//}
+
+// --------- Make Friends ---------
+void makeFriends(User& user) {
     system("cls");
     displayColoredText("\n\n\t\t          - ADD FRIENDS - \n", 11);
     displayColoredText("\t\t----------------------------------- \n\n", 11);
 
+ 
     string targetUsername;
-    cout << "\t\tEnter the username to follow: ";
+    cout << "Enter username: ";
     cin >> targetUsername;
-
     if (targetUsername == user.username) {
         displayColoredText("\t\tYou cannot follow yourself!\n", 12);
         cin.ignore();
@@ -826,37 +893,28 @@ void addFriends(User& user) {
         profileMenu(user);
         return;
     }
-
-    if (user.following.contains(targetUsername)) {
-        displayColoredText("\t\tYou are already following this user!\n", 12);
-        cin.ignore();
-        cin.get();
-        profileMenu(user);
-        return;
-    }
-
-    if (targetUser->isPublic) {
-        // Directly follow public account
-        user.following.insert(targetUsername);
-        targetUser->followers.insert(user.username);
-        users.insert(user.username, user);
-        users.insert(targetUsername, *targetUser);
-        saveUsers();
-        displayColoredText("\t\tYou are now following " + targetUsername + "!\n", 10);
-    }
     else {
-        // Send follow request for private account
-        string notification = user.username + " sent you a follow request";
-        targetUser->notifications.enqueue(notification);
-        users.insert(targetUsername, *targetUser);
-        saveUsers();
-        displayColoredText("\t\tFollow request sent to " + targetUsername + "!\n", 10);
+        if (!user.friends.contains(targetUsername))
+        {
+            friendShips[user.userId].push_back(targetUser->username);
+            friendShips[targetUser->userId].push_back(user.username);
+            user.friends.insert(targetUsername);
+        }
     }
+
+
+        cout << "Friends of : " << user.username << "\n";
+
+        for (int i = 0; i < friendShips[user.userId].size(); i++) {
+               cout << "- " << friendShips[user.userId][i] << "\n";
+        }
+              
 
     cin.ignore();
     cin.get();
     profileMenu(user);
 }
+
 
 // --------- View Notifications ---------
 void viewNotifications(User& user) {
@@ -915,12 +973,19 @@ void loadUsers() {
     string line;
     while (getline(userFile, line)) {
         stringstream ss(line);
+        int userId;
         string username, password, displayName, bio, interest[5];
         bool isPublic;
         int notificationCount;
-        ss >> username >> password >> displayName >> isPublic >> notificationCount;
+      
+        ss >> userId >> username >> password >> displayName >> isPublic >> notificationCount;
         getline(ss >> ws, bio); // Skip whitespace and read bio
-        User user = { username, password, displayName, isPublic };
+
+        User user = { userId };
+        user.username = username;
+        user.password = password;
+        user.displayName = displayName;
+        user.isPublic = isPublic;
         user.bio = bio;
         for (int i = 0; i < 5; i++)
         {
@@ -933,6 +998,9 @@ void loadUsers() {
         }
 
         users.insert(username, user);
+        if (user.userId > lastUserId) {
+            lastUserId = user.userId;
+        }
     }
     userFile.close();
 }
@@ -949,7 +1017,7 @@ void saveUsers() {
         for (int j = 0; j < bucket.size; j++) {
             if (bucket.entries[j].isUsed) {
                 User& user = bucket.entries[j].value;
-                userFile << user.username << " " << user.password << " " << user.displayName << " "
+                userFile << user.userId << " " << user.username << " " << user.password << " " << user.displayName << " "
                     << user.isPublic << " " << user.notifications.getSize() << " " << user.bio << " ";
                 for (int i = 0; i < 5; i++)
                 {
