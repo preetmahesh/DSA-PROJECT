@@ -340,7 +340,8 @@ void viewSavedPosts(User& user);
 void sendMessage(User& user);
 void viewMessages(User& user);
 //void addFriends(User& user);
-void makeFriends(User& user);// New function
+void makeFriends(User& user);
+void showFriends(User& user);
 void viewNotifications(User& user); // New function
 void searchUsers();
 void searchPosts();
@@ -348,6 +349,7 @@ void loadUsers();
 void saveUsers();
 void loadPosts();
 void savePosts();
+void savefriends();
 
 // --------- Helper Functions ---------
 void displayColoredText(const string& text, int colorCode) {
@@ -522,9 +524,10 @@ void profileMenu(User& user) {
     cout << "\t\t5. View Saved Posts\n";
     cout << "\t\t6. Send Message\n";
     cout << "\t\t7. View Messages\n";
-    cout << "\t\t8. Add Friends\n"; // New option
-    cout << "\t\t9. View Notifications\n"; // New option
-    cout << "\t\t10. Logout\n\n";
+    cout << "\t\t8. Add Friends\n";// New option
+    cout << "\t\t9. Show Friends\n";
+    cout << "\t\t10. View Notifications\n"; // New option
+    cout << "\t\t11. Logout\n\n";
     cout << "\t\tEnter your choice: ";
 
     int choice;
@@ -556,9 +559,12 @@ void profileMenu(User& user) {
         makeFriends(user);
         break;
     case 9:
-        viewNotifications(user);
+        showFriends(user);
         break;
     case 10:
+        viewNotifications(user);
+        break;
+    case 11:
         logout(user);
         break;
     default:
@@ -605,26 +611,42 @@ void viewFeed(User& user) {
     system("cls");
     displayColoredText("\n\n\t\t          - YOUR FEED - \n", 11);
     displayColoredText("\t\t----------------------------------- \n\n", 11);
-    char choice = - 1;
-    
+
+
     posts.forEach([&](Post& post) {
+        User* author = users.find(post.username);
+        if (!author) return;
+
+        bool isDirectFriend = user.friends.contains(post.username);
+        bool isMutualFriend = false;
+
+        if (!isDirectFriend) {
+            for (const auto& userFriend : friendShips[user.userId]) {
+                for (const auto& authorFriend : friendShips[author->userId]) {
+                    if (userFriend == authorFriend) {
+                        isMutualFriend = true;
+                        break;
+                    }
+                }
+                if (isMutualFriend) break;
+            }
+        }
+
+        if (isDirectFriend || isMutualFriend) {
         
-        if (user.friends.contains(post.username)) {
+
             cout << "\t\t" << post.username << ": " << post.content
                 << " | Likes: " << post.likes << "\n";
-        }
-        
     
-
+        }
         });
-      
-       
 
     cout << "\n\t\tPress Enter to return...";
     cin.ignore();
     cin.get();
     profileMenu(user);
 }
+
 
 // --------- Explore Posts ---------
 void explorePosts(User& user) {
@@ -809,63 +831,20 @@ void viewMessages(User& user) {
     profileMenu(user);
 }
 
-// --------- Add Friends ---------
-//void addFriends(User& user) {
-//    system("cls");
-//    displayColoredText("\n\n\t\t          - ADD FRIENDS - \n", 11);
-//    displayColoredText("\t\t----------------------------------- \n\n", 11);
-//
-//    string targetUsername;
-//    cout << "\t\tEnter the username to follow: ";
-//    cin >> targetUsername;
-//
-//    if (targetUsername == user.username) {
-//        displayColoredText("\t\tYou cannot follow yourself!\n", 12);
-//        cin.ignore();
-//        cin.get();
-//        profileMenu(user);
-//        return;
-//    }
-//
-//    User* targetUser = users.find(targetUsername);
-//    if (!targetUser) {
-//        displayColoredText("\t\tUser not found.\n", 12);
-//        cin.ignore();
-//        cin.get();
-//        profileMenu(user);
-//        return;
-//    }
-//
-//    if (user.following.contains(targetUsername)) {
-//        displayColoredText("\t\tYou are already following this user!\n", 12);
-//        cin.ignore();
-//        cin.get();
-//        profileMenu(user);
-//        return;
-//    }
-//
-//    if (targetUser->isPublic) {
-//        // Directly follow public account
-//        user.following.insert(targetUsername);
-//        targetUser->followers.insert(user.username);
-//        users.insert(user.username, user);
-//        users.insert(targetUsername, *targetUser);
-//        saveUsers();
-//        displayColoredText("\t\tYou are now following " + targetUsername + "!\n", 10);
-//    }
-//    else {
-//        // Send follow request for private account
-//        string notification = user.username + " sent you a follow request";
-//        targetUser->notifications.enqueue(notification);
-//        users.insert(targetUsername, *targetUser);
-//        saveUsers();
-//        displayColoredText("\t\tFollow request sent to " + targetUsername + "!\n", 10);
-//    }
-//
-//    cin.ignore();
-//    cin.get();
-//    profileMenu(user);
-//}
+// --------- Show Friends ---------
+void showFriends(User& user) {
+    system("cls");
+    displayColoredText("\n\n\t\t          - YOUR FRIENDS - \n", 11);
+    displayColoredText("\t\t----------------------------------- \n\n", 11);
+
+    for (int i = 0; i < friendShips[user.userId].size(); i++) {
+        cout << " - " << friendShips[user.userId][i] << endl;
+    }
+    cin.ignore();
+    cin.get();
+    profileMenu(user);
+}
+
 
 // --------- Make Friends ---------
 void makeFriends(User& user) {
@@ -899,6 +878,7 @@ void makeFriends(User& user) {
             friendShips[user.userId].push_back(targetUser->username);
             friendShips[targetUser->userId].push_back(user.username);
             user.friends.insert(targetUsername);
+            targetUser->friends.insert(user.username);
         }
     }
 
@@ -909,7 +889,7 @@ void makeFriends(User& user) {
                cout << "- " << friendShips[user.userId][i] << "\n";
         }
               
-
+    savefriends();
     cin.ignore();
     cin.get();
     profileMenu(user);
@@ -1033,6 +1013,27 @@ void saveUsers() {
         }
     }
     userFile.close();
+}
+
+
+
+// --------- Save friends ---------
+void savefriends() {
+    ofstream friendsFile("friends.txt");
+    if (!friendsFile) {
+        cerr << "Error saving freinds file!" << endl;
+        return;
+    }
+    for (int i = 0; i < 100; i++)
+    {
+        for (int j = 0; j < friendShips[i].size(); j++)
+        {
+            friendsFile << friendShips[i][j] << " ";
+        }
+        friendsFile << "\n";
+    }
+
+    friendsFile.close();
 }
 
 // --------- Load Posts ---------
