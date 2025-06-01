@@ -814,6 +814,8 @@ void sendMessage(User& user) {
     else {
         displayColoredText("User not found.\n", 12);
     }
+    cin.ignore();
+    cin.get();
     profileMenu(user);
 }
 
@@ -1016,6 +1018,30 @@ void saveUsers() {
 }
 
 
+// --------- Load friends ---------
+void loadfriends() {
+    ifstream friendsFile("friends.txt");
+    if (!friendsFile) {
+        cerr << "Error opening friends file for reading!" << endl;
+        return;
+    }
+
+    string line;
+    int index = 0;
+
+    while (getline(friendsFile, line) && index < 100) {
+        stringstream ss(line);
+        string friendName;
+        friendShips[index].clear(); 
+
+        while (ss >> friendName) {
+            friendShips[index].push_back(friendName);
+        }
+        index++;
+    }
+
+    friendsFile.close();
+}
 
 // --------- Save friends ---------
 void savefriends() {
@@ -1091,6 +1117,7 @@ void savePosts() {
 int main() {
     loadUsers();
     loadPosts();
+    loadfriends();
     displayStartWindow();
     displayMainMenu();
     return 0;
