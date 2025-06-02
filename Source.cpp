@@ -180,6 +180,13 @@ struct User {
     User(int id) : userId(id) { }
 };
 
+struct PostWithPriority {
+    Post post;
+    int priority;
+    PostWithPriority(Post p, int prio) : post(p), priority(prio) {}
+};
+
+
 // Custom Hash Table for Users (string -> User)
 struct UserHashTable {
     struct BucketEntry {
@@ -339,10 +346,9 @@ void savePost(User& user, int postId);
 void viewSavedPosts(User& user);
 void sendMessage(User& user);
 void viewMessages(User& user);
-//void addFriends(User& user);
 void makeFriends(User& user);
 void showFriends(User& user);
-void viewNotifications(User& user); // New function
+void viewNotifications(User& user); 
 void searchUsers();
 void searchPosts();
 void loadUsers();
@@ -612,18 +618,19 @@ void viewFeed(User& user) {
     displayColoredText("\n\n\t\t          - YOUR FEED - \n", 11);
     displayColoredText("\t\t----------------------------------- \n\n", 11);
 
-
     posts.forEach([&](Post& post) {
         User* author = users.find(post.username);
         if (!author) return;
+
+        if (post.username == user.username) return; 
 
         bool isDirectFriend = user.friends.contains(post.username);
         bool isMutualFriend = false;
 
         if (!isDirectFriend) {
-            for (const auto& userFriend : friendShips[user.userId]) {
-                for (const auto& authorFriend : friendShips[author->userId]) {
-                    if (userFriend == authorFriend) {
+            for (const auto& userFriendId : friendShips[user.userId]) {
+                for (const auto& authorFriendId : friendShips[author->userId]) {
+                    if (userFriendId == authorFriendId) {
                         isMutualFriend = true;
                         break;
                     }
@@ -632,12 +639,9 @@ void viewFeed(User& user) {
             }
         }
 
-        if (isDirectFriend || isMutualFriend) {
-        
-
+        if (isDirectFriend || (isMutualFriend && author->isPublic)) {
             cout << "\t\t" << post.username << ": " << post.content
                 << " | Likes: " << post.likes << "\n";
-    
         }
         });
 
@@ -648,66 +652,49 @@ void viewFeed(User& user) {
 }
 
 
-// --------- Explore Posts ---------
+
+
+
 void explorePosts(User& user) {
     system("cls");
     displayColoredText("\n\n\t\t          - EXPLORE POSTS - \n", 11);
     displayColoredText("\t\t----------------------------------- \n\n", 11);
 
-    vector<Post> postsWithPriority;
+    vector<PostWithPriority> postsWithPriority;
 
-    posts.forEach([&](Post& post) {
-        int count = 0; 
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
+    // Step 1: Assign per-user priority
+    posts.forEach([&](const Post& post) {
+        int count = 0;
+        for (int i = 0; i < 5; ++i) {
+            if (user.interest[i].empty()) continue;
+            for (int j = 0; j < 5; ++j) {
                 if (user.interest[i] == post.keywords[j]) {
                     count++;
                 }
             }
         }
-        post.priority = count;
-        postsWithPriority.push_back(post); 
-        });
+        postsWithPriority.push_back(PostWithPriority(post, count));
+    });
 
-    
+    // Step 2: Bubble Sort by priority (descending)
     int n = postsWithPriority.size();
     for (int i = 0; i < n - 1; ++i) {
         for (int j = 0; j < n - i - 1; ++j) {
             if (postsWithPriority[j].priority < postsWithPriority[j + 1].priority) {
-                Post temp = postsWithPriority[j];
+                PostWithPriority temp = postsWithPriority[j];
                 postsWithPriority[j] = postsWithPriority[j + 1];
                 postsWithPriority[j + 1] = temp;
             }
         }
     }
 
-   
-    char choice;
+    // Step 3: Display posts
     for (int i = 0; i < n; ++i) {
-        Post& p = postsWithPriority[i];
-        cout << "\n\t\tAuthor | " << p.username
-            << " | Content: " << p.content
-            << " | Likes: " << p.likes
-            << " | Priority: " << p.priority << "\n";
-
-        //cout << "\t\tLike = 'L', Comment = 'C', Save = 'S', Skip = any other key: ";
-        //cin >> choice;
-        //switch (choice) {
-        //case 'L':
-        //case 'l':
-        //    likePost(user, p.postId);
-        //    break;
-        //case 'C':
-        //case 'c':
-        //    commentOnPost(user, p.postId);
-        //    break;
-        //case 'S':
-        //case 's':
-        //    savePost(user, p.postId);
-        //    break;
-        //default:
-        //    break;
-        //}
+        Post& p = postsWithPriority[i].post;
+        cout << "\n\t\tAuthor: " << p.username
+             << " | Content: " << p.content
+             << " | Likes: " << p.likes
+             << " | Priority: " << postsWithPriority[i].priority << "\n";
     }
 
     cout << "\n\t\tPress Enter to return...";
@@ -715,6 +702,7 @@ void explorePosts(User& user) {
     cin.get();
     profileMenu(user);
 }
+
 
 // --------- Like Post ---------
 void likePost(User& user, int postId) {
